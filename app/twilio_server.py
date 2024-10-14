@@ -9,16 +9,24 @@ load_dotenv()
 class TwilioClient:
 
     def __init__(self):
+        # Este Client es la clase principal de la biblioteca de Twilio para Python. Se inicializa con las credenciales de su cuenta Twilio.
         self.client = Client(
             os.environ["TWILIO_ACCOUNT_ID"], os.environ["TWILIO_AUTH_TOKEN"]
         )
         
     # Termina una llamada en curso
     def end_call(self, sid):
+        #self.client.calls(sid) accede a la llamada específica usando su SID.
+        #update() es un método que permite modificar una llamada en curso.
         try:
             call = self.client.calls(sid).update(
+                # Esto es TwiML (Twilio Markup Language), un conjunto de instrucciones XML para Twilio.
+                # <Response> es el elemento raíz de TwiML.
+                # <Hangup> es una instrucción que le dice a Twilio que termine la llamada.
+                
                 twiml="<Response><Hangup></Hangup></Response>",
             )
+            # vars(call) convierte el objeto call en un diccionario, mostrando todas sus propiedades.
             print(f"Ended call: ", vars(call))
         except Exception as err:
             print(err)
@@ -71,7 +79,10 @@ class TwilioClient:
 
     # Obtiene el estado de una llamada.
     def get_call_status(self, call_id):
+        #calls es un recurso que representa todas las llamadas en su cuenta Twilio.
+        #Al pasar call_id a calls(), estamos seleccionando una llamada específica.
         call_status = self.client.calls(call_id).fetch()
+        # fetch() es un método que hace una solicitud HTTP GET al API de Twilio para obtener los detalles de esa llamada específica.
         return call_status
     
     # Actualiza una llamada en curso.
