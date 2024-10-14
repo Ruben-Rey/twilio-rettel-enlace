@@ -28,7 +28,7 @@ load_dotenv(override=True)
 app.include_router(webhook_router)
 app.include_router(analizer)
 
-
+# Ruta para llamadas salientes:
 @app.post("/outbound-call")
 async def handle_twilio_voice_webhook(request: Request):
     body = await request.json()
@@ -37,7 +37,7 @@ async def handle_twilio_voice_webhook(request: Request):
     call = twilio_client.create_phone_call(os.getenv("PHONE_NUMBER"), to_number, os.environ['RETELL_AGENT_ID'], custom_variables)#from,to
     return {"call_sid": call.sid, "msg": "done"}
 
-
+# Ruta para el estado de la llamada:
 @app.post("/call-status")
 async def handle_status_callback(request: Request):
    body = await request.json()
@@ -72,28 +72,47 @@ async def send_data(url ,item: Item):
         return response.json()
 
 
-
+# Ruta principal para el webhook de voz de Twilio:
 @app.post("/twilio-voice-webhook/{agent_id_path}")
 async def handle_twilio_voice_webhook(request: Request, agent_id_path: str):
 
+    #Extrae los parametros de la consulta de la solicitud
     query_params = request.query_params
+    
+    #Crea un diccionario "custom_variables" con estos parametros
     custom_variables = {key: query_params[key] for key in query_params}
 
     try:
         # Check if it is machine
+        
+        #Espera y obtiene los datos del formulario POST enviados por Twilio.
         post_data = await request.form()
+        
+        #Verifica si la llamada fue contestada por una máquina (contestador automático).
         if "AnsweredBy" in post_data and post_data["AnsweredBy"] == "machine_start":
+            #Si es machine
+            #Obtiene el estado de la llamada de Twilio usando el CallSid.
             call = twilio_client.get_call_status(post_data["CallSid"])
+            
             url = os.getenv("GHL_VOICE_MAIL_URL")
+            #Valida si hay una url
             if url is not None and len(url) != 0:
+                #Funcion permite crear una tarea asyncrona que se ejecutara concurrentemente
+                #Significa que "create_task" se ejecutara en segundo plano, permitiendo que el resto de codigo continue
                 asyncio.create_task(
+                    #Aqui se instancia directamente, es similar a lo que se hacia antes:
+                    #telefono = Item(phone="+514156446")
+                    #send_data( os.getenv("GHL_VOICE_MAIL_URL"),telefono))
                     send_data( os.getenv("GHL_VOICE_MAIL_URL"),Item(phone=call.to))
                 )
+            #Se termina la llamada
             twilio_client.end_call(post_data["CallSid"])
+            #Se devuelve una respuesta de texto plano vacìa
             return PlainTextResponse("")
         elif "AnsweredBy" in post_data:
             return PlainTextResponse("")
 
+        #Si no es una constestadora y tampoco tiene el "AnsweredBy" en los datos POST
         url = os.getenv("GHL_VOICE_MAIL_URL")
         if url is not None and len(url) != 0:
             asyncio.create_task(

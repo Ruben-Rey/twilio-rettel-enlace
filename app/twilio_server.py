@@ -12,7 +12,8 @@ class TwilioClient:
         self.client = Client(
             os.environ["TWILIO_ACCOUNT_ID"], os.environ["TWILIO_AUTH_TOKEN"]
         )
-
+        
+    # Termina una llamada en curso
     def end_call(self, sid):
         try:
             call = self.client.calls(sid).update(
@@ -22,6 +23,7 @@ class TwilioClient:
         except Exception as err:
             print(err)
 
+    # Registra un número de teléfono con un agente de Retell.
     def register_phone_agent(self, phone_number, agent_id):
         try:
             phone_number_objects = self.client.incoming_phone_numbers.list(limit=200)
@@ -41,7 +43,8 @@ class TwilioClient:
             return phone_number_object
         except Exception as err:
             print(err)
-
+            
+    # Inicia una llamada saliente.
     def create_phone_call(self, from_number, to_number, agent_id, custom_variables):
 
         #Avoid errors.
@@ -66,10 +69,12 @@ class TwilioClient:
         except Exception as err:
             print(err)
 
+    # Obtiene el estado de una llamada.
     def get_call_status(self, call_id):
         call_status = self.client.calls(call_id).fetch()
         return call_status
-
+    
+    # Actualiza una llamada en curso.
     def update_call(self, call_id, item):
         updated_call = self.client.calls(call_id).update(twiml=item)
         pprint(updated_call)
